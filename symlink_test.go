@@ -13,11 +13,11 @@ import (
 func ExampleSymlink_Lstat() {
 	tempDir := expect(pathlib.Cwd()).
 		Join("temp", "symlink-lstat").
-		AsDir()
+		As[pathlib.Dir]()
 	expect(tempDir.MakeAll(0o755, 0o755))
 	defer func() { expect(tempDir.RemoveAll()) }()
 
-	file := tempDir.Join("file.txt").AsFile()
+	file := tempDir.Join("file.txt").As[pathlib.File]()
 	expect(file.Make(0o666))
 
 	{
@@ -27,7 +27,7 @@ func ExampleSymlink_Lstat() {
 		}
 	}
 	link := expect(tempDir.Join("link").
-		AsSymlink().
+		As[pathlib.Symlink]().
 		LinkTo(pathlib.PathStr(file.String())))
 
 	onDisk := expect(link.Lstat())
@@ -44,11 +44,11 @@ func ExampleSymlink_Lstat() {
 func TestSymlink_beholder(t *testing.T) {
 	temp := pathlib.Dir(t.TempDir())
 	file := temp.Join("file.txt")
-	expect(file.AsFile().Make(0644))
+	expect(file.As[pathlib.File]().Make(0644))
 	symlink := expect(temp.Join("nested/dir").
-		AsDir().
+		As[pathlib.Dir]().
 		MakeAll(0777, 0777)).
-		Join("link").AsSymlink()
+		Join("link").As[pathlib.Symlink]()
 
 	expect(symlink.LinkTo("../../file.txt"))
 	stat := expect(symlink.Stat())
@@ -65,7 +65,7 @@ func TestSymlink_beholder(t *testing.T) {
 	if expect(symlink.Lstat()).Mode().IsRegular() {
 		t.Fail()
 	}
-	_, err := file.AsSymlink().Lstat()
+	_, err := file.As[pathlib.Symlink]().Lstat()
 	if err == nil {
 		t.Fail()
 	}
@@ -74,18 +74,18 @@ func TestSymlink_beholder(t *testing.T) {
 func TestSymlink_linkChasing(t *testing.T) {
 	temp := pathlib.Dir(t.TempDir())
 	file := temp.Join("file.txt")
-	handle := expect(file.AsFile().Make(0644))
+	handle := expect(file.As[pathlib.File]().Make(0644))
 	content := "example"
 	expect(handle.WriteString(content))
 	enforce(handle.Close())
 	link1 := expect(temp.Join("nested/dir").
-		AsDir().
+		As[pathlib.Dir]().
 		MakeAll(0777, 0777)).
-		Join("link1").AsSymlink()
+		Join("link1").As[pathlib.Symlink]()
 	expect(link1.LinkTo("../../file.txt"))
-	link2 := expect(temp.Join("link2").AsSymlink().LinkTo("nested/dir/link1"))
+	link2 := expect(temp.Join("link2").As[pathlib.Symlink]().LinkTo("nested/dir/link1"))
 
-	data := expect(link2.Join().AsFile().Read())
+	data := expect(link2.Join().As[pathlib.File]().Read())
 	if string(data) != "example" {
 		t.Fatal(string(data))
 	}
@@ -97,11 +97,11 @@ func TestSymlink_linkChasing(t *testing.T) {
 
 func TestSymlink_transformer(t *testing.T) {
 	dir := pathlib.Dir(t.TempDir())
-	file := dir.Join("file.txt").AsFile()
+	file := dir.Join("file.txt").As[pathlib.File]()
 	if err := expect(file.Make(0666)).Close(); err != nil {
 		panic(err)
 	}
-	link := expect(dir.Join("link.to").AsSymlink().LinkTo(pathlib.PathStr(file)))
+	link := expect(pathlib.Symlink(dir.Join("link.to")).LinkTo(pathlib.PathStr(file)))
 
 	_, err := link.Join("foo").Lstat()
 	if err == nil {
@@ -133,11 +133,13 @@ func TestSymlink_transformer(t *testing.T) {
 
 func TestSymlink_purePath(t *testing.T) {
 	dir := pathlib.Dir(t.TempDir())
-	file := dir.Join("file.txt").AsFile()
+	file := dir.Join("file.txt").As[pathlib.File]()
 	if err := expect(file.Make(0666)).Close(); err != nil {
 		panic(err)
 	}
-	link := expect(dir.Join("link.to").AsSymlink().LinkTo(pathlib.PathStr(file)))
+	link := expect(
+		dir.Join("link.to").As[pathlib.Symlink]().LinkTo(pathlib.PathStr(file)),
+	)
 	ext := link.Ext()
 	if ext != ".to" {
 		t.Fail()
@@ -164,8 +166,10 @@ func TestSymlink_purePath(t *testing.T) {
 func TestSymlink_chown(t *testing.T) {
 	dir := pathlib.Dir(t.TempDir())
 	file := dir.Join("file.txt")
-	expect(file.AsFile().Make(0666))
-	link := expect(dir.Join("link.to").AsSymlink().LinkTo(pathlib.PathStr(file)))
+	expect(file.As[pathlib.File]().Make(0666))
+	link := expect(
+		dir.Join("link.to").As[pathlib.Symlink]().LinkTo(pathlib.PathStr(file)),
+	)
 
 	testChown(t, link)
 }
@@ -179,15 +183,17 @@ func TestSymlink_chmod(t *testing.T) {
 
 	dir := pathlib.Dir(t.TempDir())
 	file := dir.Join("file.txt")
-	expect(file.AsFile().Make(0666))
-	link := expect(dir.Join("link.to").AsSymlink().LinkTo(pathlib.PathStr(file)))
+	expect(file.As[pathlib.File]().Make(0666))
+	link := expect(
+		dir.Join("link.to").As[pathlib.Symlink]().LinkTo(pathlib.PathStr(file)),
+	)
 	t.Fatalf("%o", expect(link.Lstat()).Mode())
 	testChmod(t, link, 0600)
 }
 
 func TestSymlink_localize(t *testing.T) {
 	temp := pathlib.Dir(t.TempDir())
-	link := expect(temp.Join("link").AsSymlink().Rel(temp))
+	link := expect(temp.Join("link").As[pathlib.Symlink]().Rel(temp))
 	localized := expect(link.Localize())
 	if localized != link {
 		t.Fatalf("expected %q, got %q", link, localized)
@@ -197,8 +203,8 @@ func TestSymlink_localize(t *testing.T) {
 func TestSymlink_mover(t *testing.T) {
 	temp := pathlib.Dir(t.TempDir())
 	file := temp.Join("file.txt")
-	expect(file.AsFile().Make(0666))
-	symlink := expect(temp.Join("link").AsSymlink().LinkTo(file))
+	expect(file.As[pathlib.File]().Make(0666))
+	symlink := expect(temp.Join("link").As[pathlib.Symlink]().LinkTo(file))
 
 	renamed := expect(symlink.Rename(temp.Join("renamed")))
 	if symlink.Exists() {

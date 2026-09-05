@@ -17,23 +17,17 @@ var _ Beholder[PathStr] = PathStr(".")
 // See [os.Stat].
 //
 // Stat implements [Beholder].
-func (p PathStr) Stat() (Info[PathStr], error) {
-	return stat(p)
-}
+func (p PathStr) Stat() (Info[PathStr], error) { return stat(p) }
 
 // Observe the file info of the path on-disk. Note that this does not follow symlinks.
 //
 // see [os.Lstat].
 //
 // Lstat implements [Beholder].
-func (p PathStr) Lstat() (Info[PathStr], error) {
-	return lstat(p)
-}
+func (p PathStr) Lstat() (Info[PathStr], error) { return lstat(p) }
 
 // Exists implements [Beholder].
-func (p PathStr) Exists() bool {
-	return exists(p)
-}
+func (p PathStr) Exists() bool { return exists(p) }
 
 // PurePath --------------------------------------------------------------------
 var _ PurePath = PathStr(".")
@@ -107,17 +101,13 @@ func (p PathStr) Ext() string {
 // See [path/filepath.IsAbs] for more details.
 //
 // IsAbsolute implements [PurePath].
-func (p PathStr) IsAbsolute() bool {
-	return isAbsolute(p)
-}
+func (p PathStr) IsAbsolute() bool { return isAbsolute(p) }
 
 // returns true if the path is local/relative, false otherwise.
 // see [path/filepath.IsLocal] for more details.
 //
 // IsLocal implements [PurePath].
-func (p PathStr) IsLocal() bool {
-	return isLocal(p)
-}
+func (p PathStr) IsLocal() bool { return isLocal(p) }
 
 // Readable --------------------------------------------------------------------
 var _ Readable[any] = PathStr(".")
@@ -153,18 +143,14 @@ var _ Transformer[PathStr] = PathStr(".")
 // Convenience method to cast get the untyped string representation of the path.
 //
 // String implements [Transformer].
-func (p PathStr) String() string {
-	return string(p)
-}
+func (p PathStr) String() string { return string(p) }
 
 // Remove ".", "..", and repeated slashes from a path.
 //
 // See [path/filepath.Clean].
 //
 // Clean implements [Transformer].
-func (p PathStr) Clean() PathStr {
-	return clean(p)
-}
+func (p PathStr) Clean() PathStr { return clean(p) }
 
 // Returns an absolute path, or an error if the path cannot be made absolute. Note that there may be more than one
 // absolute path for a given input path.
@@ -172,30 +158,22 @@ func (p PathStr) Clean() PathStr {
 // See [path/filepath.Abs].
 //
 // Abs implements [Transformer].
-func (p PathStr) Abs() (PathStr, error) {
-	return abs(p)
-}
+func (p PathStr) Abs() (PathStr, error) { return abs(p) }
 
 // See [path/filepath.Localize].
 // Localize implements [Transformer].
-func (p PathStr) Localize() (PathStr, error) {
-	return localize(p)
-}
+func (p PathStr) Localize() (PathStr, error) { return localize(p) }
 
 // Returns a relative path to the target directory, or an error if the path cannot be made relative.
 //
 // See [path/filepath.Rel].
 //
 // Rel implements [Transformer]
-func (p PathStr) Rel(base Dir) (PathStr, error) {
-	return rel(base, p)
-}
+func (p PathStr) Rel(base Dir) (PathStr, error) { return rel(base, p) }
 
 // Expand a leading "~" into the user's home directory. If the home directory cannot be
 // determined, the path is returned unchanged.
-func (p PathStr) ExpandUser() (PathStr, error) {
-	return expandUser(p)
-}
+func (p PathStr) ExpandUser() (PathStr, error) { return expandUser(p) }
 
 // Changer ----------------------------------------------------------------------
 var _ Changer = PathStr(".")
@@ -203,16 +181,12 @@ var _ Changer = PathStr(".")
 // See [os.Chmod].
 //
 // Chmod implements [Changer].
-func (p PathStr) Chmod(mode os.FileMode) error {
-	return chmod(p, mode)
-}
+func (p PathStr) Chmod(mode os.FileMode) error { return chmod(p, mode) }
 
 // Change Ownership of the path.
 //
 // Chown implements [Changer].
-func (p PathStr) Chown(uid int, gid int) error {
-	return chown(p, uid, gid)
-}
+func (p PathStr) Chown(uid int, gid int) error { return chown(p, uid, gid) }
 
 // Mover ------------------------------------------------------------------------
 var _ Remover[PathStr] = PathStr(".")
@@ -220,16 +194,12 @@ var _ Remover[PathStr] = PathStr(".")
 // See [os.Remove].
 //
 // Remove implements [Remover].
-func (p PathStr) Remove() error {
-	return remove(p)
-}
+func (p PathStr) Remove() error { return remove(p) }
 
 // See [os.Rename].
 //
 // Rename implements [Remover].
-func (p PathStr) Rename(newPath PathStr) (PathStr, error) {
-	return rename(p, newPath)
-}
+func (p PathStr) Rename(newPath PathStr) (PathStr, error) { return rename(p, newPath) }
 
 // -----------------------------------------------------------------------------
 // Returns true if the two paths represent the same path.
@@ -256,17 +226,5 @@ func (p PathStr) Eq(q PathStr) bool {
 
 // casts -----------------------------------------------------------------------
 
-// Utility function to declare that the PathStr represents a directory
-func (p PathStr) AsDir() Dir {
-	return Dir(p)
-}
-
-// Utility function to declare that the PathStr represents a file
-func (p PathStr) AsFile() File {
-	return File(p)
-}
-
-// Utility function to declare that the PathStr represents a symlink.
-func (p PathStr) AsSymlink() Symlink {
-	return Symlink(p)
-}
+// Syntactic sugar to
+func (p PathStr) As[K Kind]() K { return K(p) }

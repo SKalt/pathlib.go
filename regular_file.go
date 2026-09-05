@@ -143,8 +143,8 @@ func (f File) Lstat() (info Info[File], err error) {
 // See [os.Stat].
 //
 // Stat implements [Beholder].
-func (f File) Stat() (Info[File], error) {
-	info, err := stat(f)
+func (f File) Stat() (info Info[File], err error) {
+	info, err = stat(f)
 	if err != nil {
 		return nil, err
 	}
@@ -160,16 +160,12 @@ var _ Changer = File("./example")
 // See [os.Chmod].
 //
 // Chmod implements [Changer].
-func (f File) Chmod(mode os.FileMode) error {
-	return chmod(f, mode)
-}
+func (f File) Chmod(mode os.FileMode) error { return chmod(f, mode) }
 
 // See [os.Chown].
 //
 // Chown implements [Changer].
-func (f File) Chown(uid int, gid int) error {
-	return chown(f, uid, gid)
-}
+func (f File) Chown(uid int, gid int) error { return chown(f, uid, gid) }
 
 // Mover ------------------------------------------------------------------------
 var _ Remover[File] = File("./example")
@@ -177,16 +173,12 @@ var _ Remover[File] = File("./example")
 // See [os.Remove].
 //
 // Remove implements [Remover].
-func (f File) Remove() error {
-	return remove(f)
-}
+func (f File) Remove() error { return remove(f) }
 
 // See [os.Rename].
 //
 // Rename implements [Remover].
-func (f File) Rename(newPath PathStr) (File, error) {
-	return rename(f, newPath)
-}
+func (f File) Rename(newPath PathStr) (File, error) { return rename(f, newPath) }
 
 // Maker -----------------------------------------------------------------------
 var _ Maker[FileHandle] = File("./example")
@@ -219,6 +211,4 @@ var _ Readable[[]byte] = File("./example")
 // See [os.ReadFile].
 //
 // Read implements [Readable].
-func (f File) Read() ([]byte, error) {
-	return os.ReadFile(string(f))
-}
+func (f File) Read() ([]byte, error) { return os.ReadFile(string(f)) }

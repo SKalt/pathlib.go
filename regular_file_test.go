@@ -56,7 +56,7 @@ func TestFile_manipulator(t *testing.T) {
 		expect(prevWorkingDirectory.Chdir())
 	}()
 
-	file := dir.Join("foo.txt").AsFile()
+	file := dir.Join("foo.txt").As[pathlib.File]()
 	expect(file.Make(0655))
 	if !file.Exists() {
 		t.Fail()
@@ -91,7 +91,7 @@ func TestFile_Transformer(t *testing.T) {
 
 func TestFile_Beholder(t *testing.T) {
 	temp := pathlib.Dir(t.TempDir())
-	file := temp.Join("file.txt").AsFile()
+	file := temp.Join("file.txt").As[pathlib.File]()
 	if file.Exists() {
 		t.Fail()
 	}
@@ -104,14 +104,14 @@ func TestFile_Beholder(t *testing.T) {
 
 func TestFile_chown(t *testing.T) {
 	temp := pathlib.Dir(t.TempDir())
-	file := temp.Join("file.txt").AsFile()
+	file := temp.Join("file.txt").As[pathlib.File]()
 	expect(file.Make(0666))
 	testChown(t, file)
 }
 
 func TestFile_open(t *testing.T) {
 	temp := pathlib.Dir(t.TempDir())
-	file := temp.Join("file.txt").AsFile()
+	file := temp.Join("file.txt").As[pathlib.File]()
 	if _, err := file.Open(os.O_RDONLY, 0666); err == nil {
 		t.Fatal("expected error opening file that does not exist")
 	}
@@ -119,7 +119,7 @@ func TestFile_open(t *testing.T) {
 }
 func TestFile_remake(t *testing.T) {
 	temp := pathlib.Dir(t.TempDir())
-	file := temp.Join("file.txt").AsFile()
+	file := temp.Join("file.txt").As[pathlib.File]()
 	h := expect(file.Make(0666))
 	expect(h.WriteString("hello"))
 	enforce(h.Close())
@@ -137,7 +137,7 @@ func TestFile_remake(t *testing.T) {
 
 func TestFile_wrongType(t *testing.T) {
 	temp := pathlib.Dir(t.TempDir())
-	actual := expect(temp.Join("dir").AsDir().Make(0777))
+	actual := expect(temp.Join("dir").As[pathlib.Dir]().Make(0777))
 	incognito := pathlib.File(actual)
 	info, err := incognito.Stat()
 	if err == nil {
@@ -157,7 +157,7 @@ func TestFile_wrongType(t *testing.T) {
 
 func TestFile_localize(t *testing.T) {
 	temp := pathlib.Dir(t.TempDir())
-	file := expect(temp.Join("file.txt").AsFile().Rel(temp))
+	file := expect(temp.Join("file.txt").As[pathlib.File]().Rel(temp))
 	localized := expect(file.Localize())
 	if localized != file {
 		t.Fatalf("expected %q, got %q", file, localized)

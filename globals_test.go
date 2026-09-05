@@ -30,8 +30,8 @@ func ExampleUserCacheDir() {
 			panic(err)
 		}
 		actual := expect(pathlib.UserCacheDir())
-		fmt.Printf("$XDG_CACHE_HOME: %q\n", expected)
-		fmt.Printf("UserCacheDir()): %q\n", actual)
+
+		fmt.Printf("$XDG_CACHE_HOME == UserCacheDir: %t\n", expected == string(actual))
 	}
 
 	{ // if $XDG_CACHE_HOME is unset, return the OS-specific default.

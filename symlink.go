@@ -9,8 +9,8 @@ import (
 type Symlink PathStr
 
 // See [os.Symlink].
-func (s Symlink) LinkTo(target PathStr) (Symlink, error) {
-	return s, os.Symlink(target.String(), s.String())
+func (s Symlink) LinkTo[P ~string](target P) (Symlink, error) {
+	return s, os.Symlink(string(target), s.String())
 }
 
 // TODO: iterator over chained symlinks

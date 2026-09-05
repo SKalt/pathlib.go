@@ -1,7 +1,9 @@
 [tools]
 go = "latest"
 golangci-lint = "latest"
+golangci-lint-langserver = "latest"
 ripgrep = "latest"
+"go:golang.org/x/tools/gopls" = "latest"
 shellcheck = "latest"
 
 [env]

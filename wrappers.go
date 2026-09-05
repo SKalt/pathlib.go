@@ -54,25 +54,11 @@ func ancestors[P Kind](p P) iter.Seq[Dir] {
 	}
 }
 
-func baseName[P Kind](p P) string {
-	return filepath.Base(string(p))
-}
-
-func ext[P Kind](p P) string {
-	return filepath.Ext(string(p))
-}
-
-func isLocal[P Kind](p P) bool {
-	return filepath.IsLocal(string(p))
-}
-
-func isAbsolute[P Kind](p P) bool {
-	return filepath.IsAbs(string(p))
-}
-
-func clean[P Kind](p P) P {
-	return P(filepath.Clean(string(p)))
-}
+func baseName[P Kind](p P) string { return filepath.Base(string(p)) }
+func ext[P Kind](p P) string      { return filepath.Ext(string(p)) }
+func isLocal[P Kind](p P) bool    { return filepath.IsLocal(string(p)) }
+func isAbsolute[P Kind](p P) bool { return filepath.IsAbs(string(p)) }
+func clean[P Kind](p P) P         { return P(filepath.Clean(string(p))) }
 
 func abs[P Kind](p P) (P, error) {
 	q, err := filepath.Abs(string(p))
@@ -122,11 +108,8 @@ func rename[P Kind](p P, newPath PathStr) (result P, err error) {
 	return
 }
 
-func remove[P Kind](p P) error {
-	return os.Remove(string(p))
-}
+// See [os.Remove]
+func remove[P Kind](p P) error { return os.Remove(string(p)) }
 
 // See [os.RemoveAll]
-func removeAll[P Kind](p P) (P, error) {
-	return p, os.RemoveAll(string(p))
-}
+func removeAll[P Kind](p P) (P, error) { return p, os.RemoveAll(string(p)) }

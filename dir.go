@@ -75,23 +75,14 @@ func (d Dir) IsAbsolute() bool {
 }
 
 // IsLocal implements [PurePath].
-func (d Dir) IsLocal() bool {
-	return isLocal(d)
-}
+func (d Dir) IsLocal() bool                { return isLocal(d) }
+func (d Dir) Join(parts ...string) PathStr { return join(d, parts...) }
 
-// Join implements [PurePath].
-func (d Dir) Join(parts ...string) PathStr {
-	return join(d, parts...)
-}
-
-func (d Dir) Parts() []string {
-	return PathStr(d).Parts()
-}
+// Parts implements [PurePath]
+func (d Dir) Parts() []string { return PathStr(d).Parts() }
 
 // Parent implements [PurePath].
-func (d Dir) Parent() Dir {
-	return parent(d)
-}
+func (d Dir) Parent() Dir { return parent(d) }
 
 // Ext implements [PurePath].
 func (d Dir) Ext() string {

@@ -10,7 +10,7 @@ import (
 func TestOnDisk_ensemble(t *testing.T) {
 	dir := expect(pathlib.TempDir().
 		Join("test/on-disk/ensemble.dir").
-		AsDir().
+		As[pathlib.Dir]().
 		MakeAll(0777, 0777))
 
 	assertEq := func(a, b any) {
@@ -19,7 +19,7 @@ func TestOnDisk_ensemble(t *testing.T) {
 		}
 	}
 	info := expect(dir.Stat())
-	assertEq(info.Parent(), pathlib.TempDir().Join("test/on-disk").AsDir())
+	assertEq(info.Parent(), pathlib.TempDir().Join("test/on-disk").As[pathlib.Dir]())
 	assertEq(info.BaseName(), "ensemble.dir")
 	assertEq(info.Ext(), ".dir")
 	assertEq(info.IsAbsolute(), true)
@@ -68,7 +68,7 @@ func TestOnDisk_Transformer(t *testing.T) {
 
 func TestOnDisk_manipulator(t *testing.T) {
 	temp := pathlib.Dir(t.TempDir())
-	dir := expect(temp.Join("foo").AsDir().Make(0777))
+	dir := expect(temp.Join("foo").As[pathlib.Dir]().Make(0777))
 	onDisk := expect(dir.Stat())
 	if err := onDisk.Chmod(0755); err != nil {
 		t.Fatal(err)

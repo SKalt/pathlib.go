@@ -13,7 +13,7 @@ import (
 )
 
 func ExampleFileHandle_Read() {
-	file := pathlib.TempDir().Join("example.txt").AsFile()
+	file := pathlib.TempDir().Join("example.txt").As[pathlib.File]()
 	handle := expect(file.Make(0o644))
 	defer func() { _ = handle.Close() }()
 	if _, err := handle.WriteString("Hello, World!"); err != nil {
@@ -31,37 +31,41 @@ func ExampleFileHandle_Read() {
 }
 
 func ExampleFileHandle_Path() {
-	handle, err := pathlib.TempDir().Join("example.txt").AsFile().Make(0o644)
+	tmp := pathlib.TempDir()
+	handle, err := tmp.Join("example.txt").As[pathlib.File]().Make(0o644)
 	if err != nil {
 		panic(err)
 	}
 	defer func() { _ = handle.Close() }()
-	fmt.Println(handle.Path())
+	fmt.Println(expect(handle.Rel(tmp)))
 	// Output:
-	// /tmp/example.txt
+	// example.txt
 }
 
 func ExampleFileHandle_Parts() {
-	handle, err := pathlib.TempDir().Join("example.txt").AsFile().Make(0o644)
+	tmp := pathlib.TempDir()
+	handle, err := tmp.Join("example.txt").As[pathlib.File]().Make(0o644)
 	if err != nil {
 		panic(err)
 	}
 	defer func() { _ = handle.Close() }()
-	fmt.Println(handle.Parts())
+	fmt.Println(expect(handle.Rel(tmp)).Parts())
 	// Output:
-	// [/ tmp example.txt]
+	// [example.txt]
 }
 
 func ExampleFileHandle_Join() {
-	handle, err := pathlib.TempDir().Join("example.txt").AsFile().Make(0o644)
+	tmp := pathlib.TempDir()
+	handle, err := tmp.Join("example.txt").As[pathlib.File]().Make(0o644)
 	if err != nil {
 		panic(err)
 	}
 	defer func() { _ = handle.Close() }()
 	joined := handle.Join("../other.txt")
-	fmt.Printf("%T(%s)", joined, joined)
+	rel := expect(joined.Rel(tmp))
+	fmt.Printf("%T(%s)", rel, rel)
 	// Output:
-	// pathlib.PathStr(/tmp/other.txt)
+	// pathlib.PathStr(other.txt)
 }
 func tempDir(t *testing.T) pathlib.Dir {
 	t.Helper()
@@ -82,7 +86,7 @@ func assertEq[S comparable](t *testing.T, expected, actual S) {
 
 func TestHandle_purePath(t *testing.T) {
 	temp := tempDir(t)
-	handle, err := temp.Join("example.txt").AsFile().Make(0o644)
+	handle, err := temp.Join("example.txt").As[pathlib.File]().Make(0o644)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +102,7 @@ func TestHandle_purePath(t *testing.T) {
 
 func TestHandle_beholder(t *testing.T) {
 	temp := tempDir(t)
-	handle := expect(temp.Join("example.txt").AsFile().Make(0o644))
+	handle := expect(temp.Join("example.txt").As[pathlib.File]().Make(0o644))
 	defer func() { _ = handle.Close() }()
 	var _ pathlib.Beholder[pathlib.File] = handle
 
@@ -120,7 +124,8 @@ func TestHandle_beholder(t *testing.T) {
 }
 
 func ExampleFileHandle_Remove() {
-	handle, err := pathlib.TempDir().Join("example.txt").AsFile().Make(0o644)
+	tmp := pathlib.TempDir()
+	handle, err := tmp.Join("example.txt").As[pathlib.File]().Make(0o644)
 	if err != nil {
 		panic(err)
 	}
@@ -132,14 +137,14 @@ func ExampleFileHandle_Remove() {
 	if !errors.Is(err, os.ErrClosed) {
 		panic("expected closed file")
 	}
-	fmt.Printf("%s exists: %t\n", handle, handle.Exists())
+	fmt.Printf("%s exists: %t\n", expect(handle.Rel(tmp)), handle.Exists())
 	// Output:
-	// /tmp/example.txt exists: false
+	// example.txt exists: false
 }
 
 func TestHandle_nonexistent_stat(t *testing.T) {
 	temp := tempDir(t)
-	f := temp.Join("example.txt").AsFile()
+	f := temp.Join("example.txt").As[pathlib.File]()
 	handle := expect(f.Make(0644))
 	enforce(f.Remove())
 	_, err := handle.Stat()
@@ -153,7 +158,7 @@ func TestHandle_nonexistent_stat(t *testing.T) {
 
 func TestHandle_nonexistent_stat_rename(t *testing.T) {
 	temp := tempDir(t)
-	f := temp.Join("example.txt").AsFile()
+	f := temp.Join("example.txt").As[pathlib.File]()
 	handle := expect(f.Make(0644))
 	_ = expect(handle.Rename(temp.Join("other.sh")))
 	_, err := handle.Stat()
@@ -167,14 +172,14 @@ func TestHandle_nonexistent_stat_rename(t *testing.T) {
 
 func TestFileHandle_chown(t *testing.T) {
 	temp := pathlib.Dir(t.TempDir())
-	file := temp.Join("file.txt").AsFile()
+	file := temp.Join("file.txt").As[pathlib.File]()
 	handle := expect(file.Make(0666))
 	testChown(t, handle)
 }
 
 func TestFileHandle_chmod(t *testing.T) {
 	temp := pathlib.Dir(t.TempDir())
-	file := temp.Join("file.txt").AsFile()
+	file := temp.Join("file.txt").As[pathlib.File]()
 	handle := expect(file.Make(0666))
 	enforce(handle.Chmod(0600))
 	info := expect(handle.Stat())
@@ -185,7 +190,7 @@ func TestFileHandle_chmod(t *testing.T) {
 
 func TestFileHandle_transformer(t *testing.T) {
 	dir := pathlib.Dir(t.TempDir())
-	handle := expect(dir.Join("file.txt").AsFile().Make(0666))
+	handle := expect(dir.Join("file.txt").As[pathlib.File]().Make(0666))
 
 	_, err := handle.Localize()
 	if err == nil {
@@ -217,13 +222,13 @@ func TestFileHandle_transformer(t *testing.T) {
 
 func TestFileHandle_openSymlink(t *testing.T) {
 	temp := tempDir(t)
-	h1 := expect(temp.Join("foo/bar/baz.txt").AsFile().MakeAll(0666, 0777))
+	h1 := expect(temp.Join("foo/bar/baz.txt").As[pathlib.File]().MakeAll(0666, 0777))
 	content := "example"
 	expect(h1.WriteString(content))
 	enforce(h1.Close())
 
-	link := expect(temp.Join("link").AsSymlink().LinkTo("./foo/bar/baz.txt"))
-	handle := expect(pathlib.PathStr(link).AsFile().Open(os.O_RDONLY, 0666))
+	link := expect(temp.Join("link").As[pathlib.Symlink]().LinkTo("./foo/bar/baz.txt"))
+	handle := expect(pathlib.PathStr(link).As[pathlib.File]().Open(os.O_RDONLY, 0666))
 	data := expect(io.ReadAll(handle))
 	if string(data) != content {
 		t.Fatalf("expected %q\ngot %q", content, string(data))

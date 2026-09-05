@@ -195,11 +195,16 @@ func ExamplePathStr_ExpandUser() {
 }
 
 func ExamplePathStr_beholder() {
-	temp := expect(pathlib.TempDir().Join("path-str-beholder").AsDir().Make(0777))
+	temp := expect(
+		pathlib.TempDir().
+			Join("path-str-beholder").
+			As[pathlib.Dir]().
+			Make(0777),
+	)
 	defer func() { _, _ = temp.RemoveAll() }()
 
-	file := temp.Join("file.txt")
-	expect(file.AsFile().Make(0644))
+	file := temp.Join("file.txt").As[pathlib.File]()
+	expect(file.Make(0644))
 
 	rel := expect(file.Rel(temp))
 	fmt.Printf("OnDisk: %q %s\n", rel, expect(file.Stat()).Mode())
@@ -213,13 +218,15 @@ func ExamplePathStr_beholder() {
 }
 
 func ExamplePathStr_read() {
-	tmpDir := expect(pathlib.TempDir().Join("example-pathStr-read").AsDir().Make(0777))
+	tmpDir := expect(
+		pathlib.TempDir().Join("example-pathStr-read").As[pathlib.Dir]().Make(0777),
+	)
 	example := tmpDir.Join("example")
 
 	{
-		expect(example.AsDir().Make(0777))
-		expect(example.Join("foo").AsFile().Make(0644))
-		expect(example.Join("bar").AsDir().Make(0777))
+		expect(example.As[pathlib.Dir]().Make(0777))
+		expect(example.Join("foo").As[pathlib.File]().Make(0644))
+		expect(example.Join("bar").As[pathlib.Dir]().Make(0777))
 		entries := expect(example.Read()).([]fs.DirEntry)
 		for entry := range entries {
 			fmt.Println(entry)
@@ -227,7 +234,7 @@ func ExamplePathStr_read() {
 		enforce(example.Remove())
 	}
 	{
-		_, err := expect(example.AsFile().Make(0644)).WriteString("text")
+		_, err := expect(example.As[pathlib.File]().Make(0644)).WriteString("text")
 		if err != nil {
 			panic(err)
 		}
@@ -236,25 +243,28 @@ func ExamplePathStr_read() {
 	}
 	{
 		target := tmpDir.Join("target")
-		if _, err := expect(target.AsFile().Make(0644)).WriteString("target"); err != nil {
+		if _, err := expect(
+			target.As[pathlib.File]().Make(0644),
+		).WriteString("target"); err != nil {
 			panic(err)
 		}
-		expect(example.AsSymlink().LinkTo(target))
+		expect(example.As[pathlib.Symlink]().LinkTo(target))
 		fmt.Println(expect(example.Read()))
 	}
 }
 
 func ExamplePathStr_Read() {
-	var dir = pathlib.TempDir().Join("PathStr.Read")
+	var tmp = pathlib.TempDir()
+	var dir = tmp.Join("PathStr.Read")
 	var file = dir.Join("a.txt")
 	var link = dir.Join("link")
 
-	_, err := expect(file.AsFile().MakeAll(0666, 0777)).WriteString("file text")
+	_, err := expect(file.As[pathlib.File]().MakeAll(0666, 0777)).WriteString("file text")
 	if err != nil {
 		panic(err)
 	}
-	defer func() { expect(dir.AsDir().RemoveAll()) }()
-	expect(link.AsSymlink().LinkTo(file))
+	defer func() { expect(dir.As[pathlib.Dir]().RemoveAll()) }()
+	expect(link.As[pathlib.Symlink]().LinkTo(file))
 
 	var contents any
 	contents = expect(pathlib.PathStr(file).Read())
@@ -263,18 +273,18 @@ func ExamplePathStr_Read() {
 	contents = expect(pathlib.PathStr(dir).Read())
 	fmt.Printf("dir.Read() => %T(%q)\n", contents, contents)
 
-	contents = expect(pathlib.PathStr(link).Read())
-	fmt.Printf("link.Read() => %T(%q)", contents, contents)
+	linkTarget := expect(pathlib.PathStr(link).Read()).(pathlib.PathStr)
+	fmt.Printf("link.Read() => %T(%q)", linkTarget, expect(linkTarget.Rel(tmp)))
 	// Output:
 	// file.Read() => []uint8("file text")
 	// dir.Read() => []fs.DirEntry(["- a.txt" "L link"])
-	// link.Read() => pathlib.PathStr("/tmp/PathStr.Read/a.txt")
+	// link.Read() => pathlib.PathStr("PathStr.Read/a.txt")
 }
 
 func TestPathStr_Rename(t *testing.T) {
 	dir := pathlib.Dir(t.TempDir())
 	a := dir.Join("a")
-	expect(a.AsFile().Make(0666))
+	expect(a.As[pathlib.File]().Make(0666))
 	b := expect(a.Rename(dir.Join("b")))
 	if a.Exists() {
 		t.Fail()
@@ -287,49 +297,54 @@ func TestPathStr_Rename(t *testing.T) {
 func TestPathStr_chmod(t *testing.T) {
 	dir := pathlib.Dir(t.TempDir())
 	f := dir.Join("a")
-	expect(f.AsFile().Make(0666))
+	expect(f.As[pathlib.File]().Make(0666))
 	testChmod(t, f, 0640)
 }
 
 func TestPathStr_chown(t *testing.T) {
 	dir := pathlib.Dir(t.TempDir())
 	f := dir.Join("foo")
-	expect(f.AsFile().Make(0666))
+	expect(f.As[pathlib.File]().Make(0666))
 	testChown(t, pathlib.PathStr(f))
 }
 
 func ExamplePathStr_Remove() {
-	dir := expect(pathlib.TempDir().Join("pathStr-remove").AsDir().Make(0777))
+	tmp := pathlib.TempDir()
+	dir := expect(tmp.Join("pathStr-remove").As[pathlib.Dir]().Make(0777))
 	defer func() { expect(dir.RemoveAll()) }()
 
-	f := dir.Join("foo.txt")
-	expect(f.AsFile().Make(0666))
-	link := dir.Join("link")
-	expect(link.AsSymlink().LinkTo(f))
-	err := pathlib.PathStr(dir).Remove()
+	f := dir.Join("foo.txt").As[pathlib.File]()
+	expect(f.Make(0666))
+	link := dir.Join("link").As[pathlib.Symlink]()
+	expect(link.LinkTo(f))
+	err := dir.Remove()
 	if err != nil {
-		fmt.Println("Unable to delete non-empty directory " + dir)
+		fmt.Println("Unable to delete non-empty directory " + expect(dir.Rel(tmp)))
 	}
 
 	enforce(link.Remove())
 	if !link.Exists() {
-		fmt.Println("removed symlink " + link)
+		fmt.Println("removed symlink " + expect(link.Rel(tmp)))
 	}
 	if f.Exists() {
-		fmt.Println("removing " + link + " didn't affect link target " + f)
+		fmt.Printf(
+			"removing %s didn't affect link target %s\n",
+			expect(link.Rel(tmp)),
+			expect(f.Rel(tmp)),
+		)
 	} else {
-		panic("removing " + link + " removed " + f)
+		panic(fmt.Errorf("removing %s removed %s", link, f))
 	}
 
 	enforce(f.Remove())
 	if !f.Exists() {
-		fmt.Println("removed file " + f)
+		fmt.Println("removed file " + expect(f.Rel(tmp)))
 	}
 	// Output:
-	// Unable to delete non-empty directory /tmp/pathStr-remove
-	// removed symlink /tmp/pathStr-remove/link
-	// removing /tmp/pathStr-remove/link didn't affect link target /tmp/pathStr-remove/foo.txt
-	// removed file /tmp/pathStr-remove/foo.txt
+	// Unable to delete non-empty directory pathStr-remove
+	// removed symlink pathStr-remove/link
+	// removing pathStr-remove/link didn't affect link target pathStr-remove/foo.txt
+	// removed file pathStr-remove/foo.txt
 
 }
 
@@ -338,7 +353,7 @@ func TestPathStr_localize(t *testing.T) {
 	t.Chdir(temp.String())
 
 	f := temp.Join("file.txt")
-	expect(f.AsFile().Make(0666))
+	expect(f.As[pathlib.File]().Make(0666))
 
 	f = expect(f.Rel(temp))
 	localized := expect(f.Localize())

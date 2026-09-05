@@ -63,8 +63,8 @@ type Transformer[P Kind] interface {
 type Info[P Kind] interface {
 	fs.FileInfo
 	PurePath
-	Transformer[P]
 	Changer
+	Transformer[P]
 	Remover[P]
 	// the typed version of [fs.FileInfo.Name]
 	Path() P
